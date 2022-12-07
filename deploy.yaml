@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dev-october
+  namespace: develop
+spec:
+  selector:
+    matchLabels:
+      app: dev-october
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: dev-october
+    spec:
+      containers:
+        - name: dev-october
+          image: registry-hc.kr.ncr.ntruss.com/dev_october:latest
+          env:
+          - name: NODE_ENV
+            value: "development"
+          - name: LANG
+            value: "ko_KR.UTF-8"
+          - name: TZ
+            value: "Asia/Seoul"
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "100m"
+            limits:
+              memory: "128Mi"
+              cpu: "200m"
+      imagePullSecrets:
+        - name: regcred-dev
+
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: dev-october
+  namespace: develop
+  annotations:
+    service.beta.kubernetes.io/ncloud-load-balancer-layer-type: "nplb"
+    service.beta.kubernetes.io/ncloud-load-balancer-size: "SMALL"
+
+spec:
+  ports:
+    - port: 80
+      targetPort: 3000
+  selector:
+    app: dev-october
+  type: LoadBalancer
