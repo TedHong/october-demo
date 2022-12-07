@@ -6,6 +6,7 @@ const CONSTANTS = require("../common/constants");
 const requestIp = require("request-ip");
 const URLS = require("../common/urls");
 const myCache = new NodeCache();
+const cubrid = require("../cubrid/dbconnect");
 
 const tokenInfo =
     {
@@ -25,36 +26,50 @@ function getErrorMsg(code, msg){
 }
 
 const tokenManager = {
-    createToken: (req, res) => {
+    createToken: async (req, res) => {
         const clientIp = requestIp.getClientIp(req);
         logger.info("["+URLS.GET_TOKEN+"] "+clientIp + " | "+JSON.stringify(req.body));
 
-        let result;
         try {
             const accessKey = req.body["access_key"];
             const secretKey = req.body["secret_key"];
+            // console.log("accessKey = "+accessKey);
+            // console.log("secretKey = "+secretKey);
 
-            const payload = { access_key: accessKey};
-            const options = {
-                algorithm: "HS256",
-                expiresIn : "30m",
-                issuer: "swhong"
-            };
-            result = {
-                token : jwt.sign(payload, secretKey, options)
-            }
+            const connKeyQuery = "SELECT * FROM tn_common_data WHERE data_key = ? OR data_key = ?;";
 
-            tokenInfo.access_key = accessKey;
-            tokenInfo.secret_key = secretKey;
-            tokenInfo.access_token = result.token;
+            await cubrid.queryForObject('GET', connKeyQuery, ['ncp_access_key', 'ncp_secret_key'], (dbResult) => {
+                const mAccessKey = dbResult.message[0].data_value;
+                const mSecretKey = dbResult.message[1].data_value;
 
-            myCache.set("lastToken", tokenInfo);
-            // console.log(tokenInfo);
+                if(mAccessKey !== accessKey || mSecretKey !== secretKey){
+                    res.send(getErrorMsg(CONSTANTS.INVALID_KEY, "it's wrong key."));
+                    return;
+                }
 
+                const payload = { access_key: accessKey};
+                const options = {
+                    algorithm: "HS256",
+                    expiresIn : "30m",
+                    issuer: "yooncoms"
+                };
+                const result = {
+                    token : jwt.sign(payload, secretKey, options)
+                }
+
+                tokenInfo.access_key = accessKey;
+                tokenInfo.secret_key = secretKey;
+                tokenInfo.access_token = result.token;
+
+                myCache.set("lastToken", tokenInfo);
+                // console.log(tokenInfo);
+                res.send(result);
+
+            });
         }catch (err){
             res.send(err.message);
         }
-        res.send(result);
+
     },
     verifyToken: async (token) => {
         const lastToken =  myCache.get("lastToken");
