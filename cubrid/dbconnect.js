@@ -6,11 +6,11 @@ const {logger} = require("../logger");
 const slackBot = require('../utils/slack_bot.js');
 let conn;
 const dbConf = {
-    host: (process.env.NODE_ENV === 'development') ? '' : '',
+    host: (process.env.NODE_ENV === 'development') ? '개발용 DB 주소' : '라이브용 DB 주소',
     port: 33000,
-    user: 'dbuser',
-    password: 'pw',
-    database: 'dbname'
+    user: '아이디',
+    password: '비밀번호',
+    database: 'DB이름'
 };
 const factory = {
     name: 'CUBRID',
