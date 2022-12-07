@@ -4,7 +4,6 @@
 
 ## Description
 * SaaS Maker라는 외부 서비스와의 연동을 위해 만들어진 REST API 서버입니다.
-  * 
 * ncloud K8S 환경에서 사용하고 있습니다.
   * ncloud 의 Source Commit (git), Source Build, Source Deploy 를 이용해 
   CI / CD pipeline 을 구축해 빌드 및 배포 되고 있습니다.
